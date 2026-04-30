@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0f0f1a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ماشین حساب">
+<link rel="manifest" href="#" id="manifest-link">
+<title>ماشین حساب هوشمند</title>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f1a;
+    --surface: #1a1a2e;
+    --surface2: #16213e;
+    --accent: #00d4ff;
+    --accent2: #7b2ff7;
+    --accent3: #ff6b6b;
+    --text: #e8e8f0;
+    --text-dim: #8888aa;
+    --btn-num: #1e1e35;
+    --btn-op: #1a1a3a;
+    --btn-eq: linear-gradient(135deg, #00d4ff, #7b2ff7);
+    --btn-spec: #0d1b2a;
+    --radius: 16px;
+    --shadow: 0 8px 32px rgba(0,212,255,0.1);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Vazirmatn', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+  }
+
+  .bg-glow {
+    position: fixed;
+    width: 300px; height: 300px;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.15;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .bg-glow.g1 { background: #00d4ff; top: -100px; left: -100px; }
+  .bg-glow.g2 { background: #7b2ff7; bottom: -100px; right: -100px; }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 420px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+  }
+
+  /* Tab Bar */
+  .tabs {
+    display: flex;
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 12px;
+    gap: 4px;
+  }
+  .tab {
+    flex: 1;
+    padding: 10px 4px;
+    text-align: center;
+    border-radius: 9px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-dim);
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .tab.active {
+    background: linear-gradient(135deg, rgba(0,212,255,0.2), rgba(123,47,247,0.2));
+    color: var(--accent);
+    border: 1px solid rgba(0,212,255,0.3);
+  }
+
+  /* Screens */
+  .screen { display: none; flex-direction: column; flex: 1; }
+  .screen.active { display: flex; }
+
+  /* ===== CALCULATOR SCREEN ===== */
+  .display {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 20px 20px 16px;
+    margin-bottom: 12px;
+    min-height: 130px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: flex-end;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+  .display .history {
+    font-size: 14px;
+    color: var(--text-dim);
+    min-height: 22px;
+    word-break: break-all;
+    text-align: left;
+    direction: ltr;
+  }
+  .display .expression {
+    font-size: 22px;
+    color: var(--text-dim);
+    min-height: 30px;
+    word-break: break-all;
+    text-align: left;
+    direction: ltr;
+    margin-top: 4px;
+  }
+  .display .result {
+    font-size: 42px;
+    font-weight: 600;
+    color: var(--text);
+    word-break: break-all;
+    text-align: left;
+    direction: ltr;
+    line-height: 1.1;
+    margin-top: 4px;
+  }
+  .display .result.small { font-size: 28px; }
+
+  .keypad {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    flex: 1;
+  }
+
+  .btn {
+    background: var(--btn-num);
+    border: none;
+    border-radius: 14px;
+    color: var(--text);
+    font-size: 20px;
+    font-family: 'Vazirmatn', sans-serif;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0;
+    height: 68px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.1s;
+    border: 1px solid rgba(255,255,255,0.04);
+    position: relative;
+    overflow: hidden;
+    user-select: none;
+  }
+  .btn:active { transform: scale(0.94); opacity: 0.85; }
+  .btn.op { background: var(--btn-op); color: var(--accent); font-size: 22px; }
+  .btn.func { background: var(--btn-spec); color: var(--text-dim); font-size: 15px; }
+  .btn.eq {
+    background: var(--btn-eq);
+    color: white;
+    font-size: 28px;
+    box-shadow: 0 4px 20px rgba(0,212,255,0.3);
+  }
+  .btn.eq:active { box-shadow: none; }
+  .btn.del { color: var(--accent3); }
+  .btn.span2 { grid-column: span 2; }
+  .btn.zero { font-size: 20px; }
+
+  .btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: white;
+    opacity: 0;
+    border-radius: inherit;
+    transition: opacity 0.1s;
+  }
+  .btn:active::after { opacity: 0.06; }
+
+  /* ===== MARGIN SCREEN ===== */
+  .calc-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 12px;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+  .calc-card h3 {
+    font-size: 14px;
+    color: var(--accent);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .calc-card h3 span { font-size: 18px; }
+
+  .field-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .field-row label {
+    font-size: 13px;
+    color: var(--text-dim);
+    width: 90px;
+    flex-shrink: 0;
+    text-align: right;
+  }
+  .field-row input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-size: 16px;
+    font-family: 'Vazirmatn', sans-serif;
+    outline: none;
+    transition: border-color 0.2s;
+    text-align: left;
+    direction: ltr;
+  }
+  .field-row input:focus { border-color: var(--accent); }
+  .field-row .unit {
+    font-size: 12px;
+    color: var(--text-dim);
+    width: 24px;
+    text-align: center;
+  }
+
+  .result-box {
+    background: linear-gradient(135deg, rgba(0,212,255,0.08), rgba(123,47,247,0.08));
+    border: 1px solid rgba(0,212,255,0.2);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-top: 6px;
+  }
+  .result-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+  }
+  .result-row:not(:last-child) { border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .result-label { font-size: 13px; color: var(--text-dim); }
+  .result-value { font-size: 16px; font-weight: 600; color: var(--accent); direction: ltr; }
+  .result-value.green { color: #4ade80; }
+  .result-value.orange { color: #fb923c; }
+
+  .calc-btn {
+    width: 100%;
+    padding: 13px;
+    background: linear-gradient(135deg, #00d4ff, #7b2ff7);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-size: 15px;
+    font-family: 'Vazirmatn', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 14px;
+    transition: opacity 0.2s;
+  }
+  .calc-btn:active { opacity: 0.85; }
+
+  .info-box {
+    background: rgba(123,47,247,0.1);
+    border: 1px solid rgba(123,47,247,0.2);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.8;
+    margin-bottom: 12px;
+  }
+  .info-box strong { color: var(--text); }
+
+  /* ===== HISTORY SCREEN ===== */
+  .history-list { flex: 1; overflow-y: auto; }
+  .history-item {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    border: 1px solid rgba(255,255,255,0.04);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .history-item .expr { font-size: 13px; color: var(--text-dim); direction: ltr; text-align: left; }
+  .history-item .res { font-size: 18px; font-weight: 600; color: var(--accent); direction: ltr; }
+  .empty-state {
+    text-align: center;
+    color: var(--text-dim);
+    padding: 60px 20px;
+    font-size: 14px;
+  }
+  .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+  .clear-btn {
+    background: rgba(255,107,107,0.1);
+    border: 1px solid rgba(255,107,107,0.3);
+    border-radius: 10px;
+    color: var(--accent3);
+    padding: 10px;
+    font-size: 13px;
+    font-family: 'Vazirmatn', sans-serif;
+    cursor: pointer;
+    width: 100%;
+    margin-bottom: 12px;
+  }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+  @media (max-height: 700px) {
+    .btn { height: 58px; font-size: 18px; }
+    .display { min-height: 110px; }
+    .keypad { gap: 8px; }
+  }
+</style>
+</head>
+<body>
+<div class="bg-glow g1"></div>
+<div class="bg-glow g2"></div>
+
+<div class="app">
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('calc')">🔢 ماشین حساب</div>
+    <div class="tab" onclick="switchTab('margin')">📊 مارجین/مارکاپ</div>
+    <div class="tab" onclick="switchTab('history')">🕐 تاریخچه</div>
+  </div>
+
+  <!-- ===== CALCULATOR SCREEN ===== -->
+  <div class="screen active" id="screen-calc">
+    <div class="display">
+      <div class="history" id="calc-history"></div>
+      <div class="expression" id="calc-expression"></div>
+      <div class="result" id="calc-result">0</div>
+    </div>
+    <div class="keypad">
+      <!-- Row 1 -->
+      <button class="btn func" onclick="calcFunc('AC')">AC</button>
+      <button class="btn func del" onclick="calcFunc('DEL')">⌫</button>
+      <button class="btn func" onclick="calcFunc('%')">%</button>
+      <button class="btn op" onclick="calcInput('÷')">÷</button>
+      <!-- Row 2 -->
+      <button class="btn" onclick="calcInput('7')">7</button>
+      <button class="btn" onclick="calcInput('8')">8</button>
+      <button class="btn" onclick="calcInput('9')">9</button>
+      <button class="btn op" onclick="calcInput('×')">×</button>
+      <!-- Row 3 -->
+      <button class="btn" onclick="calcInput('4')">4</button>
+      <button class="btn" onclick="calcInput('5')">5</button>
+      <button class="btn" onclick="calcInput('6')">6</button>
+      <button class="btn op" onclick="calcInput('-')">−</button>
+      <!-- Row 4 -->
+      <button class="btn" onclick="calcInput('1')">1</button>
+      <button class="btn" onclick="calcInput('2')">2</button>
+      <button class="btn" onclick="calcInput('3')">3</button>
+      <button class="btn op" onclick="calcInput('+')">+</button>
+      <!-- Row 5 -->
+      <button class="btn func" onclick="calcFunc('√')">√</button>
+      <button class="btn zero" onclick="calcInput('0')">0</button>
+      <button class="btn" onclick="calcInput('.')">.</button>
+      <button class="btn eq" onclick="calcFunc('=')">=</button>
+    </div>
+  </div>
+
+  <!-- ===== MARGIN/MARKUP SCREEN ===== -->
+  <div class="screen" id="screen-margin">
+    <div class="info-box">
+      <strong>مارجین:</strong> سود بر اساس قیمت فروش محاسبه می‌شود<br>
+      <strong>مارکاپ:</strong> سود بر اساس قیمت خرید محاسبه می‌شود
+    </div>
+
+    <!-- Margin Calculator -->
+    <div class="calc-card">
+      <h3><span>📈</span> محاسبه مارجین</h3>
+      <div class="field-row">
+        <label>قیمت خرید</label>
+        <input type="number" id="m-cost" placeholder="0" oninput="calcMargin()">
+        <div class="unit">﷼</div>
+      </div>
+      <div class="field-row">
+        <label>قیمت فروش</label>
+        <input type="number" id="m-sell" placeholder="0" oninput="calcMargin()">
+        <div class="unit">﷼</div>
+      </div>
+      <div class="result-box" id="margin-result" style="display:none">
+        <div class="result-row">
+          <span class="result-label">سود خالص</span>
+          <span class="result-value green" id="m-profit">-</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">مارجین (Margin)</span>
+          <span class="result-value" id="m-margin">-</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">مارکاپ (Markup)</span>
+          <span class="result-value orange" id="m-markup">-</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Find Sell Price -->
+    <div class="calc-card">
+      <h3><span>🎯</span> محاسبه قیمت فروش</h3>
+      <div class="field-row">
+        <label>قیمت خرید</label>
+        <input type="number" id="sp-cost" placeholder="0" oninput="calcSellPrice()">
+        <div class="unit">﷼</div>
+      </div>
+      <div class="field-row">
+        <label>درصد سود</label>
+        <input type="number" id="sp-margin" placeholder="مثال: 30" oninput="calcSellPrice()">
+        <div class="unit">%</div>
+      </div>
+      <div class="field-row" style="margin-bottom:0">
+        <label>نوع درصد</label>
+        <select id="sp-type" onchange="calcSellPrice()" style="flex:1;background:var(--bg);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px;font-family:'Vazirmatn',sans-serif;outline:none;">
+          <option value="margin">مارجین</option>
+          <option value="markup">مارکاپ</option>
+        </select>
+        <div class="unit"></div>
+      </div>
+      <div class="result-box" id="sp-result" style="display:none;margin-top:14px">
+        <div class="result-row">
+          <span class="result-label">قیمت فروش</span>
+          <span class="result-value green" id="sp-sell">-</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">سود خالص</span>
+          <span class="result-value" id="sp-profit">-</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== HISTORY SCREEN ===== -->
+  <div class="screen" id="screen-history">
+    <button class="clear-btn" onclick="clearHistory()">🗑️ پاک کردن تاریخچه</button>
+    <div class="history-list" id="history-list">
+      <div class="empty-state">
+        <div class="icon">📭</div>
+        هنوز محاسبه‌ای انجام نشده
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== STATE =====
+let expression = '';
+let result = '0';
+let lastResult = null;
+let justCalculated = false;
+let calcHistory = JSON.parse(localStorage.getItem('calc-history') || '[]');
+
+// ===== TABS =====
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    const ids = ['calc','margin','history'];
+    t.classList.toggle('active', ids[i] === tab);
+  });
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + tab).classList.add('active');
+  if(tab === 'history') renderHistory();
+}
+
+// ===== CALCULATOR =====
+function updateDisplay() {
+  const resEl = document.getElementById('calc-result');
+  resEl.textContent = formatNum(result);
+  resEl.className = 'result' + (result.length > 10 ? ' small' : '');
+  document.getElementById('calc-expression').textContent = expression.replace(/\*/g,'×').replace(/\//g,'÷');
+}
+
+function formatNum(n) {
+  if(n === 'خطا') return n;
+  const num = parseFloat(n);
+  if(isNaN(num)) return n;
+  if(Math.abs(num) >= 1e15) return num.toExponential(4);
+  // Add thousand separators
+  const parts = n.toString().split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return parts.join('.');
+}
+
+function calcInput(val) {
+  const ops = ['+','-','×','÷','*','/'];
+  if(justCalculated && !ops.includes(val)) {
+    expression = '';
+    result = '0';
+    justCalculated = false;
+  }
+  if(justCalculated && ops.includes(val)) {
+    expression = result.replace(/,/g,'') + val;
+    result = '0';
+    justCalculated = false;
+    updateDisplay();
+    return;
+  }
+
+  // Prevent double operators
+  if(ops.includes(val) && ops.includes(expression.slice(-1))) {
+    expression = expression.slice(0,-1) + val;
+    updateDisplay();
+    return;
+  }
+
+  // Prevent double dot
+  if(val === '.') {
+    const parts = expression.split(/[\+\-\×\÷]/);
+    const last = parts[parts.length-1];
+    if(last.includes('.')) return;
+    if(last === '' || last === undefined) { expression += '0'; }
+  }
+
+  expression += val;
+  
+  // Live preview
+  try {
+    const safe = expression.replace(/÷/g,'/').replace(/×/g,'*');
+    const r = Function('"use strict";return (' + safe + ')')();
+    if(isFinite(r)) result = r.toString();
+  } catch(e) {}
+
+  updateDisplay();
+}
+
+function calcFunc(fn) {
+  if(fn === 'AC') {
+    expression = '';
+    result = '0';
+    justCalculated = false;
+    document.getElementById('calc-history').textContent = '';
+  } else if(fn === 'DEL') {
+    expression = expression.slice(0,-1);
+    if(!expression) result = '0';
+    else {
+      try {
+        const safe = expression.replace(/÷/g,'/').replace(/×/g,'*');
+        const r = Function('"use strict";return (' + safe + ')')();
+        if(isFinite(r)) result = r.toString();
+      } catch(e) {}
+    }
+  } else if(fn === '%') {
+    try {
+      const safe = expression.replace(/÷/g,'/').replace(/×/g,'*');
+      const r = Function('"use strict";return (' + safe + ')')();
+      result = (r / 100).toString();
+      expression = result;
+      justCalculated = true;
+    } catch(e) { result = 'خطا'; }
+  } else if(fn === '√') {
+    try {
+      const safe = expression.replace(/÷/g,'/').replace(/×/g,'*') || result;
+      const r = Function('"use strict";return (' + safe + ')')();
+      result = Math.sqrt(r).toString();
+      document.getElementById('calc-history').textContent = '√(' + formatNum(r.toString()) + ')';
+      expression = '';
+      justCalculated = true;
+      saveHistory('√('+r+')', result);
+    } catch(e) { result = 'خطا'; }
+  } else if(fn === '=') {
+    if(!expression) return;
+    try {
+      const safe = expression.replace(/÷/g,'/').replace(/×/g,'*');
+      const r = Function('"use strict";return (' + safe + ')')();
+      if(!isFinite(r)) { result = 'خطا'; }
+      else {
+        document.getElementById('calc-history').textContent = expression.replace(/\*/g,'×').replace(/\//g,'÷') + ' =';
+        saveHistory(expression, r.toString());
+        result = r.toString();
+        expression = '';
+        justCalculated = true;
+      }
+    } catch(e) { result = 'خطا'; }
+  }
+  updateDisplay();
+}
+
+// ===== MARGIN/MARKUP =====
+function calcMargin() {
+  const cost = parseFloat(document.getElementById('m-cost').value);
+  const sell = parseFloat(document.getElementById('m-sell').value);
+  const box = document.getElementById('margin-result');
+  
+  if(!cost || !sell || cost <= 0 || sell <= 0) { box.style.display = 'none'; return; }
+  
+  const profit = sell - cost;
+  const margin = (profit / sell) * 100;
+  const markup = (profit / cost) * 100;
+  
+  document.getElementById('m-profit').textContent = formatCurrency(profit);
+  document.getElementById('m-margin').textContent = margin.toFixed(2) + '%';
+  document.getElementById('m-markup').textContent = markup.toFixed(2) + '%';
+  box.style.display = 'block';
+}
+
+function calcSellPrice() {
+  const cost = parseFloat(document.getElementById('sp-cost').value);
+  const pct = parseFloat(document.getElementById('sp-margin').value);
+  const type = document.getElementById('sp-type').value;
+  const box = document.getElementById('sp-result');
+  
+  if(!cost || !pct || cost <= 0 || pct <= 0) { box.style.display = 'none'; return; }
+  
+  let sell;
+  if(type === 'margin') {
+    if(pct >= 100) { box.style.display = 'none'; return; }
+    sell = cost / (1 - pct/100);
+  } else {
+    sell = cost * (1 + pct/100);
+  }
+  
+  const profit = sell - cost;
+  document.getElementById('sp-sell').textContent = formatCurrency(sell);
+  document.getElementById('sp-profit').textContent = formatCurrency(profit);
+  box.style.display = 'block';
+}
+
+function formatCurrency(n) {
+  return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+// ===== HISTORY =====
+function saveHistory(expr, res) {
+  calcHistory.unshift({ expr: expr.replace(/\*/g,'×').replace(/\//g,'÷'), res, time: Date.now() });
+  if(calcHistory.length > 50) calcHistory.pop();
+  try { localStorage.setItem('calc-history', JSON.stringify(calcHistory)); } catch(e){}
+}
+
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  if(!calcHistory.length) {
+    list.innerHTML = '<div class="empty-state"><div class="icon">📭</div>هنوز محاسبه‌ای انجام نشده</div>';
+    return;
+  }
+  list.innerHTML = calcHistory.map(item => `
+    <div class="history-item">
+      <div>
+        <div class="expr">${item.expr}</div>
+        <div class="res">${formatNum(item.res)}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function clearHistory() {
+  calcHistory = [];
+  try { localStorage.removeItem('calc-history'); } catch(e){}
+  renderHistory();
+}
+
+// ===== PWA / Service Worker =====
+const swCode = `
+const CACHE = 'calc-v1';
+const FILES = ['/'];
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES).catch(()=>{})));
+});
+self.addEventListener('fetch', e => {
+  e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+});
+`;
+
+const manifestData = {
+  name: "ماشین حساب هوشمند",
+  short_name: "حساب",
+  description: "ماشین حساب با محاسبه مارجین و مارکاپ",
+  start_url: ".",
+  display: "standalone",
+  background_color: "#0f0f1a",
+  theme_color: "#0f0f1a",
+  orientation: "portrait",
+  icons: [
+    { src: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230f0f1a'/><text y='.9em' font-size='80' x='10'>🔢</text></svg>", sizes: "192x192", type: "image/svg+xml" },
+    { src: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230f0f1a'/><text y='.9em' font-size='80' x='10'>🔢</text></svg>", sizes: "512x512", type: "image/svg+xml" }
+  ]
+};
+
+const blob = new Blob([JSON.stringify(manifestData)], {type: 'application/json'});
+document.getElementById('manifest-link').href = URL.createObjectURL(blob);
+
+if('serviceWorker' in navigator) {
+  const swBlob = new Blob([swCode], {type: 'application/javascript'});
+  navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(()=>{});
+}
+
+updateDisplay();
+</script>
+</body>
+</html>
